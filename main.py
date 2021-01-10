@@ -18,7 +18,7 @@ isMockMode = True
 
 
 
-engine_2 = CryptoEngineTriArbitrage(config['triangular_BTC_ETH_LTC'], isMockMode)
+engine_2 = CryptoEngineTriArbitrage(config['triangular'], isMockMode)
 #engine_1 = CryptoEngineTriArbitrage(config['triangular_ETH_USD_LTC'], isMockMode)
 
 

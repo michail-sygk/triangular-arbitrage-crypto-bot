@@ -1,6 +1,5 @@
 {
-
-    "triangular_BTC_ETH_LTC": {
+    "triangular": {
         "exchange": "bittrex",
         "keyFile": "keys/bittrex.json",
         "tickerPairA": "ETH-BTC",
@@ -8,6 +7,6 @@
         "tickerPairC": "XLM-BTC",
         "tickerA": "BTC",
         "tickerB": "ETH",
-        "tickerC": "LTC"
+        "tickerC": "XLM"
     }
 }

@@ -14,7 +14,7 @@ class ExchangeEngine(ExchangeEngineBase):
         self.API_URL = 'https://api.bittrex.com/'
         self.apiVersion = 'v3'
         self.sleepTime = 5
-        self.feeRatio = 0.0026
+        self.feeRatio = 0.0035
         self.sync = True
                   
     def _send_request(self, command, httpMethod, params={}, hook=None):          
@@ -31,9 +31,9 @@ class ExchangeEngine(ExchangeEngineBase):
         headers = {}
 
         api_key =   '89b69e40a3464285b8905335c5c36b2d'
-    #    api_key =   self.key['public']  
+        #    api_key =   self.key['public']  
     
-       # secret = self.key['private']
+        # secret = self.key['private']
         secret =  'b7952007d413464998d6ab31e39a5243'
         secret = bytes(secret.encode("utf-8"))
     
@@ -62,7 +62,7 @@ class ExchangeEngine(ExchangeEngineBase):
         if len(params )  == 0:  
             args = {'data': params, 'headers': headers}
         else:
-            args = {'data': content, 'headers': headers}
+            args = {'json': params, 'headers': headers}
                 
 
         
@@ -123,20 +123,7 @@ class ExchangeEngine(ExchangeEngineBase):
             r.parsed[factory_kwargs['ticker']] = json['lastTradeRate']
                                   
         return res_hook    
-
-    '''
-        return in r.parsed
-        {
-            'bid': {
-                'price': 0.02202,
-                'amount': 1103.5148
-            },
-            'ask': {
-                'price': 0.02400,
-                'amount': 103.2
-            },           
-        }
-    '''       
+    
     def get_ticker_orderBook_innermost(self, ticker):
         return self._send_request('markets/'+ticker+'/orderbook?depth='+str(25), 'GET', {}, self.hook_orderBook)
                                    
@@ -154,14 +141,6 @@ class ExchangeEngine(ExchangeEngineBase):
                             }
                     }    
         
-    '''
-        return in r.parsed
-        [
-            {
-                'orderId': 1242424
-            }
-        ]
-    '''           
     def get_open_order(self):
         return self._send_request('market/getopenorders', 'GET', {}, self.hook_openOrder)
     
@@ -170,15 +149,7 @@ class ExchangeEngine(ExchangeEngineBase):
         r.parsed = []
         for order in json['result']:
             r.parsed.append({'orderId': str(order['OrderUuid']), 'created': order['Opened']})
-
-
-        
-    '''
-        ticker: 'ETH-ETC'
-        action: 'bid' or 'ask'
-        amount: 700
-        price: 0.2
-    '''
+ 
     def place_order(self, ticker, action, amount, price):
         action = 'buy' if action == 'bid' else 'sell'
         if action == 'buy':
@@ -186,9 +157,9 @@ class ExchangeEngine(ExchangeEngineBase):
                  'marketSymbol':ticker
                 ,'direction': 'BUY'
                 ,'type':'LIMIT'
-                ,'quantity':amount
+                ,'quantity': amount
                 ,'limit': price
-                ,'timeInForce': 'FILL_OR_KILL'
+                ,'timeInForce': 'GOOD_TIL_CANCELLED'
             }
             cmd =  'orders'
         else:
@@ -198,7 +169,7 @@ class ExchangeEngine(ExchangeEngineBase):
                 ,'type':'LIMIT'
                 ,'quantity':amount
                 ,'limit': price
-                ,'timeInForce': 'FILL_OR_KILL'
+                ,'timeInForce': 'GOOD_TIL_CANCELLED'
             }
             cmd = 'orders'
         return self._send_request(cmd, 'POST',payload)    
