@@ -16,11 +16,20 @@ class CryptoEngineTriArbitrage(object):
       
         self.engine = EngineLoader.getEngine(self.exchange['exchange'], self.exchange['keyFile'])
 
+
+    # This loop starts the engine for the triangular Arbitrage..Since it will not appear an exception 
+    '''In order to have a successful arbitrage they exist some steps which have to follow:
+    1st : To check if exist open orders (This mean that an arbitrage still waits to fullfill)
+    2nd : Check how much balance we have from each coin 
+    3rd : Check the orderbook 
+    4rth : Place orders since they exist arbitrage opporunity
+    '''
+    
     def start_engine(self):
-        print (strftime('%Y%m%d%H%M%S') + ' starting Triangular Arbitrage Engine...')
+        print ('starting Triangular Arbitrage Engine...')
         while True:
             try:
-                if not self.mock and self.hasOpenOrder:
+                if  self.hasOpenOrder: #We always assume in the start of the program that we have open orders
                     self.check_openOrder()
                 elif self.check_balance():           
                     bookStatus = self.check_orderBook()
@@ -28,7 +37,7 @@ class CryptoEngineTriArbitrage(object):
                         self.place_order(bookStatus['orderInfo'])
             except Exception as e :
                print (e)
-            time.sleep(1)
+            time.sleep(self.engine.sleepTime)
     
     def check_openOrder(self):
         if self.openOrderCheckCount >= 5:
@@ -64,6 +73,7 @@ class CryptoEngineTriArbitrage(object):
         self.engine.openOrders = []
         self.hasOpenOrder = False
    
+   #Here we check the balance for each coin that we want to make Arbitrage
     def check_balance(self):
         rs = [self.engine.get_balance([
             self.exchange['tickerA'],
@@ -74,38 +84,42 @@ class CryptoEngineTriArbitrage(object):
         responses = self.send_request(rs)
  
         self.engine.balance = responses[0].parsed
-
-        ''' Not needed? '''
-        # if not self.mock:
-        #     for res in responses:
-        #         for ticker in res.parsed:
-        #             if res.parsed[ticker] < 0.05:
-        #                 print ticker, res.parsed[ticker], '- Not Enough'
-        #                 return False
+ 
         return True
     
+   #Check different opportunities which can give us arbitrage opportunities 
     def check_the_whole_order_book(self):
+        # I used to the zero to define which path we want the program to follow 
+        #Here we are interesting to see prices only from stable coins and fiat currencies
+        #0 - BID 
+        #1 - ASK
         all_combinations = [
-            ['ETH-BTC' , 'LTC-ETH', 'LTC-BTC'],
-            ['ETH-BTC' , 'DOT-ETH', 'DOT-BTC'],
-            ['ETH-BTC' , 'ATOM-ETH', 'ATOM-BTC'],
-            ['ETH-BTC' , 'AAVE-ETH', 'AAVE-BTC'],
-            ['ETH-BTC' , 'BCH-ETH', 'BCH-BTC'],
-            ['ETH-BTC' , 'DOGE-ETH', 'DOGE-BTC'],
-            ['ETH-BTC' , 'DASH-ETH', 'DASH-BTC'],
-            ['ETH-BTC' , 'XLM-ETH', 'XLM-BTC'],
-            ['ETH-BTC' , 'XMR-ETH', 'XMR-BTC'],
-           
-            ['ETH-USD' , 'LTC-ETH', 'LTC-USD'], 
-            
-            ['USDT-EUR', 'DOT-USDT', 'DOT-EUR'],
-            
-            ['BTC-USDT', 'DOT-BTC', 'DOT-USDT'],
-            ['BTC-USDT', 'ALGO-BTC', 'ALGO-USDT'],
-            ['BTC-USDT', 'LUNA-BTC', 'LUNA-USDT'],
-            ['BTC-USDT', 'XMR-BTC', 'XMR-USDT'],
-            ['BTC-USDT', 'LTC-BTC', 'LTC-USDT'],
-            ['BTC-USDT', 'XLM-BTC', 'XLM-USDT'],
+             ['USD-EUR' , 'BTC-USD', 'BTC-EUR' , 0]
+            ,['USDT-EUR' , 'BTC-USDT', 'BTC-EUR' , 0]
+            ,['USD-EUR' , 'ETH-USD', 'ETH-EUR' , 0]
+            ,['USDT-EUR' , 'ETH-USDT', 'ETH-EUR' , 0]
+            ,['USD-EUR' , 'ADA-USD', 'ADA-EUR' , 0]
+            ,['USDT-EUR' , 'ADA-USDT', 'ADA-EUR' , 0]
+            ,['USD-EUR' , 'BAND-USD', 'BAND-EUR' , 0]
+            ,['USDT-EUR' , 'BAND-USDT', 'BAND-EUR' , 0]
+            ,['USD-EUR' , 'XLM-USD', 'XLM-EUR' , 0]
+            ,['USDT-EUR' , 'XLM-USDT', 'XLM-EUR' , 0]
+            ,['USD-EUR' , 'XRP-USD', 'XRP-EUR' , 0]
+            ,['USDT-EUR' , 'XRP-USDT', 'XRP-EUR' , 0]
+            ,['USD-EUR' , 'BSV-USD', 'BSV-EUR' , 0]
+            ,['USDT-EUR' , 'BSV-USDT', 'BSV-EUR' , 0]
+            ,['USD-EUR' , 'DOT-USD', 'DOT-EUR' , 0]
+            ,['USDT-EUR' , 'DOT-USDT', 'DOT-EUR' , 0]
+            ,['USD-EUR' , 'GRT-USD', 'GRT-EUR' , 0]
+            ,['USDT-EUR' , 'GRT-USDT', 'GRT-EUR' , 0]
+            ,['USD-EUR' , 'AAVE-USD', 'AAVE-EUR' , 0]
+            ,['USDT-EUR' , 'AAVE-USDT', 'AAVE-EUR' , 0]
+         
+            ,['BTC-USDT' , 'ETH-BTC', 'ETH-USDT' , 0]
+            ,['ETH-USDT' , 'BAND-ETH', 'BAND-USDT' , 0]
+          
+       
+             
             
             ]
          
@@ -143,32 +157,33 @@ class CryptoEngineTriArbitrage(object):
                 lastPrices =  list(map(float, lastPrices))
                 bidRates = list(map(float, bidRates))
                 askRates =list(map(float, askRates))
-           
+
                 
-                askRoute_result = (1 *  bidRates[0]) / askRates[2] *   bidRates[1] 
-                bidRoute_result = (1 /  askRates[0]) / askRates[1] *   bidRates[2]
+                bidRoute_result = 0 
+                askRoute_result = 0
+                
+                if pairs[3] == 0:
+                    bidRoute_result = (1 /  askRates[0]) / askRates[1] *   bidRates[2]
+                else:
+                    askRoute_result = (1 *  bidRates[0]) / askRates[2] *   bidRates[1] 
+                
  
                 if askRoute_result > 1 :
-                    
                     percentage_profit =( (askRoute_result - 1 ) / 1 ) * 100
                     print(pairs)
-                    print('Percentage Profit:'+ str(percentage_profit) + '%')
-                    
-                     
+                    print('AskRoute Percentage Profit: %.2f' %  percentage_profit  + '%')
                     
                 if bidRoute_result > 1 :
                     percentage_profit =( (bidRoute_result - 1 ) / 1 ) * 100
                     print(pairs)
-                    print('Percentage Profit:'+ str(percentage_profit) + '%')
+                    print('BidRoute Percentage Profit:  %.2f' %  percentage_profit  + '%')
                     
                          
                         
                 
             time.sleep(2)
-        
-
-
-
+     
+    #This Function is going_to check the orderbook for the pairs that we have defined to see if we arbitrage.    
     def check_orderBook(self):
         rs = [self.engine.get_ticker_lastPrice(self.exchange['tickerA']),
               self.engine.get_ticker_lastPrice(self.exchange['tickerB']),
@@ -185,33 +200,41 @@ class CryptoEngineTriArbitrage(object):
               ]
  
         responses = self.send_request(rs)
+       
+        '''It supposed that we have an arbitrage opporunity since the bidRoute_result is greater than 1 
+        or askRoute_result is greater than 1 
+        '''
+       
         
-        # if self.mock:
-          #  print(self.exchange['tickerPairA']  + '-' + self.exchange['tickerPairB'] + '-'  + self.exchange['tickerPairC'])
-            #print ('{0} - {1}; {2} - {3}; {4} - {5}'.format(
-            #    self.exchange['tickerPairA'],
-            #    responses[0].parsed,
-            #    self.exchange['tickerPairB'],
-            #    responses[1].parsed,
-            #    self.exchange['tickerPairC'],
-            #    responses[2].parsed
-            #    ))
+        # bid route BTC->ETH->LTC->BTC for instance
+        '''
+        MORE EXPLANATION
+        1st We buy ETH for BTC 
+        2nd We buy LTC for ETH 
+        3rd We sell LTC for BTC
         
-        # bid route BTC->ETH->LTC->BTC
+        '''
         bidRoute_result = (1 / responses[0].parsed['ask']['price']) / responses[1].parsed['ask']['price'] * responses[2].parsed['bid']['price']  
+   
         if bidRoute_result > 1:
             print('Bidroute :'+ str(bidRoute_result) )
             percentage_profit =( (bidRoute_result - 1 ) / 1 ) * 100
             print('Percentage Profit:' + str(percentage_profit))
                     
-        # ask route ETH->BTC->LTC->ETH
+        # ask route ETH->BTC->LTC->ETH for instance 
+        '''
+        MORE EXPLANATION
+        1st We buy ETH for BTC 
+        2nd We buy LTC for BTC 
+        3rd We sell LTC for ETH
+        
+        '''
+                
         askRoute_result = (1 * responses[0].parsed['bid']['price']) / responses[2].parsed['ask']['price']   * responses[1].parsed['bid']['price']
         if askRoute_result > 1 :
             print('Askroute :'+ str(askRoute_result) )
             percentage_profit =( (askRoute_result - 1 ) / 1 ) * 100
             print('Percentage Profit:' + str(percentage_profit))
-
-
         
         # Max amount for bid route & ask routes can be different and so less profit
         if bidRoute_result > 1 or \
@@ -222,11 +245,8 @@ class CryptoEngineTriArbitrage(object):
         else:
             status = 0 # do nothing
  
-        # print('Bidroute :'+ str(bidRoute_result) )
-        # print('Askroute :'+ str(askRoute_result) )
-        #if status   == 0:
-        if status   >0  :
-    
+        if status   > 0  :
+            #Since that now has appeared an arbitrage we have to check if with the fees we will have still a profit.
             maxAmounts = self.getMaxAmount(lastPrices, responses, status)
             fee = 0
             for index, amount in enumerate(maxAmounts):
@@ -284,7 +304,9 @@ class CryptoEngineTriArbitrage(object):
                 ]               
                 return {'status': 2, 'orderInfo': orderInfo}
         return {'status': 0}
+    
     # Using USDT may not be accurate
+    # Here we calculate the max amounts that we can offer for the arbitrage
     def getMaxAmount(self, lastPrices, orderBookRes, status):
         maxUSDT = []
         for index, tickerIndex in enumerate(['tickerA', 'tickerB', 'tickerC']):
@@ -297,11 +319,8 @@ class CryptoEngineTriArbitrage(object):
             bid_ask = 'bid' if bid_ask == 1 else 'ask'
 
             maxBalance = min(orderBookRes[index].parsed[bid_ask]['amount'], self.engine.balance[self.exchange[tickerIndex]])
-            #print ('{0} orderBookAmount - {1} ownAmount - {2}'.format(
-            #     self.exchange[tickerIndex], 
-            #     orderBookRes[index].parsed[bid_ask]['amount'], 
-            #     self.engine.balance[self.exchange[tickerIndex]]
-            # ))
+
+
             USDT = maxBalance * float(lastPrices[index]) * (1 - self.engine.feeRatio)
             if not maxUSDT or USDT < maxUSDT: 
                 maxUSDT = USDT       
@@ -313,6 +332,7 @@ class CryptoEngineTriArbitrage(object):
 
         return maxAmounts
 
+    #This is the function for placing an order
     def place_order(self, orderInfo):
         print (orderInfo)
         rs = []
@@ -326,10 +346,11 @@ class CryptoEngineTriArbitrage(object):
 
         if  self.mock:
             responses = self.send_request(rs)
-        time.sleep(360)
+
         self.hasOpenOrder = True
         self.openOrderCheckCount = 0
 
+    #This is the function which is responsible to send the requests and it returns us the response from the API
     def send_request(self, rs):
         responses = grequests.map( rs )
         for res in responses:
@@ -338,8 +359,17 @@ class CryptoEngineTriArbitrage(object):
                 raise Exception
         return responses
 
+
+    ''' This function over here is responsible just to check all the pairs that I have defined inside to here
+    to find in what percentages they exist arbitrage opportunities.
+    
+    For now you cannot choose both of them running.
+    
+    Choose the ckeck_the_whole_order_book or start_engine     
+    '''
     def run(self):
+
+      self.check_the_whole_order_book()
+            #    self.start_engine()
         
-     # self.check_the_whole_order_book()
-      self.start_engine()
  

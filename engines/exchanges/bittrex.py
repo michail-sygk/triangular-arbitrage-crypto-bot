@@ -1,8 +1,3 @@
-'''
-    All trades have a 0.25% commission. -> real case it is 0.250626606% so use 0.26% for calculation instead
-
-'''
-
 from mod_imports import *
 from datetime import datetime
 import urllib.parse
@@ -13,16 +8,15 @@ class ExchangeEngine(ExchangeEngineBase):
     def __init__(self):
         self.API_URL = 'https://api.bittrex.com/'
         self.apiVersion = 'v3'
-        self.sleepTime = 5
-        self.feeRatio = 0.0035
+        self.sleepTime = 2
+        self.feeRatio = 0.0035 #Trades of Bittrex have 0.35 % of fees
         self.sync = True
-                  
-    def _send_request(self, command, httpMethod, params={}, hook=None):          
+       
+    #Creates different knds of requests depend on the call that we want to make. i.e. place order, get amounts etc.              
+    def _create_request(self, command, httpMethod, params={}, hook=None):          
         command = '{0}/{1}'.format(self.apiVersion, command)
-        command = command.replace('v3/markets/USD-USDT/ticker' ,'v3/markets/USDT-USD/ticker')
-        
         url = self.API_URL + command
-          
+            
         if httpMethod == "GET":
             R = grequests.get
         elif httpMethod == "POST":
@@ -48,7 +42,9 @@ class ExchangeEngine(ExchangeEngineBase):
 
         presign =  timestamp  + url + httpMethod + contentHash 
         signature = hmac.new(secret, presign.encode(), hashlib.sha512).hexdigest()
-            
+        
+        
+        #Bittrex demand these kind of headers in order to make a proper request/post call
         headers = {
              'Api-Key' : api_key 
             ,'Api-Timestamp':timestamp
@@ -81,7 +77,7 @@ class ExchangeEngine(ExchangeEngineBase):
             return response
   
     def get_balance(self, tickers=[]):
-        return self._send_request('balances', 'GET', {}, [self.hook_getBalance(tickers=tickers)])
+        return self._create_request('balances', 'GET', {}, [self.hook_getBalance(tickers=tickers)])
     
     def hook_getBalance(self, *factory_args, **factory_kwargs):
         def res_hook(r, *r_args, **r_kwargs):
@@ -89,18 +85,12 @@ class ExchangeEngine(ExchangeEngineBase):
                 if row['currencySymbol'] in  factory_kwargs['tickers'] :
                     return True
                 return False
-                 
-                
             
             json = r.json()
             r.parsed = {}
-            
-             
-         
+
             if factory_kwargs['tickers']:
                 new_json = filter(filter_currencySymbols, json)
-            
-             
                         
             for ticker in new_json:
                 r.parsed[ticker['currencySymbol'].upper()] = float(ticker['available'])
@@ -108,13 +98,13 @@ class ExchangeEngine(ExchangeEngineBase):
         return res_hook    
       
     def get_ticker_lastPrice(self, ticker):
-         return self._send_request('markets/'+ticker+'-USDT/ticker', 'GET', {}, [self.hook_lastPrice(ticker=ticker)])
+         return self._create_request('markets/'+ticker+'-USDT/ticker', 'GET', {}, [self.hook_lastPrice(ticker=ticker)])
 
     def get_all_tickers_of_bittrex(self):
-        return self._send_request('markets/tickers', 'GET', {}  )
+        return self._create_request('markets/tickers', 'GET', {}  )
     
     def get_all_markets_of_bittrex(self):
-        return self._send_request('markets', 'GET', {})
+        return self._create_request('markets', 'GET', {})
 
     def hook_lastPrice(self, *factory_args, **factory_kwargs):
         def res_hook(r, *r_args, **r_kwargs):
@@ -125,7 +115,7 @@ class ExchangeEngine(ExchangeEngineBase):
         return res_hook    
     
     def get_ticker_orderBook_innermost(self, ticker):
-        return self._send_request('markets/'+ticker+'/orderbook?depth='+str(25), 'GET', {}, self.hook_orderBook)
+        return self._create_request('markets/'+ticker+'/orderbook?depth='+str(25), 'GET', {}, self.hook_orderBook)
                                    
     def hook_orderBook(self, r, *r_args, **r_kwargs):
         json = r.json()
@@ -142,13 +132,13 @@ class ExchangeEngine(ExchangeEngineBase):
                     }    
         
     def get_open_order(self):
-        return self._send_request('market/getopenorders', 'GET', {}, self.hook_openOrder)
+        return self._create_request('orders/open', 'GET', {}, self.hook_openOrder)
     
     def hook_openOrder(self, r, *r_args, **r_kwargs):
         json = r.json()
         r.parsed = []
-        for order in json['result']:
-            r.parsed.append({'orderId': str(order['OrderUuid']), 'created': order['Opened']})
+        for order in json:
+            r.parsed.append({'orderId': str(order['id']), 'created': order['createdAt']})
  
     def place_order(self, ticker, action, amount, price):
         action = 'buy' if action == 'bid' else 'sell'
@@ -172,9 +162,9 @@ class ExchangeEngine(ExchangeEngineBase):
                 ,'timeInForce': 'GOOD_TIL_CANCELLED'
             }
             cmd = 'orders'
-        return self._send_request(cmd, 'POST',payload)    
+        return self._create_request(cmd, 'POST',payload)    
     
     def cancel_order(self, orderID):
-        return self._send_request('market/cancel?uuid={0}'.format(orderID), 'GET')
+        return self._create_request('market/cancel?uuid={0}'.format(orderID), 'GET')
     
  
