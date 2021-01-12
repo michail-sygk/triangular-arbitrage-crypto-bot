@@ -96,7 +96,7 @@ class CryptoEngineTriArbitrage(object):
         #0 - BID 
         #1 - ASK
         
-        
+       #Load all the combinations from the excel
         all_combinations = []
         df_all_combinations = pd.read_csv('all_triangulars_arbitrage.csv')
         for ind in df_all_combinations.index:
@@ -104,7 +104,7 @@ class CryptoEngineTriArbitrage(object):
                                      df_all_combinations['TickerPairB'][ind],
                                      df_all_combinations['TickerPairC'][ind],
                                      df_all_combinations['Route'][ind]])
-         
+       #  
        
              
          
@@ -113,64 +113,85 @@ class CryptoEngineTriArbitrage(object):
             response = self.send_request([rs])
             json = response[0].json()
             
-            unique_symbols = list()
             for pair in json: 
                 tickerpair = pair['symbol']
                 tickerpair =  tickerpair.replace('-', ' ')
                
             
         
-            for pairs in all_combinations:
-                lastPrices = []
-                bidRates = []
-                askRates =  []
-                
+            for pairs in all_combinations:                
+                '''
+                It's necessary to calculate excactly how much is the profit for our arbitrage opportunities
+                '''
                 tickerA = pairs[0].replace('-', ' ').split()[1] + '-USDT'
                 tickerB = pairs[1].replace('-', ' ').split()[1] + '-USDT'
                 tickerC = pairs[2].replace('-', ' ').split()[0] + '-USDT'
                 
                 tickers = [tickerA , tickerB , tickerC ]
                 
+                
+                #Some minor changes in the string of pairs
+                for i in range(0,len(tickers)):
+                    if tickers[i] == 'USDT-USDT' : 
+                        tickers[i] = 'USDT-USD'
+                        continue
+                    if tickers[i] == 'USD-USDT' : 
+                        tickers[i] = 'USDT-USD'
+                        continue
+                    if tickers[i] == 'EUR-USDT' : 
+                        tickers[i] = 'USDT-EUR'
+                        continue
+                    if tickers[i] == 'KMD-USDT' : 
+                        tickers[i] = 'KMD-USD'
+                        continue
+                
+                lastPrices = []
+                # Getting the differences with USDT in order to calculate excactly the profit. Maybe it will be a little bit differ the final result
                 for ticker in tickers:
                     for value in json: 
                         if ticker == value['symbol']: 
-                            lastPrices.append(value['lastTradeRate'])              
-
-                    
-                
-                
+                            lastPrices.append(value['lastTradeRate'])          
+                            break    
+               
+                bidRates =  []
+                askRates  =  []        
+               # Getting the bidRate and the askRate from the json to calculate if it exists arbitrage opportunity.                     
                 for pair in pairs:
                     for value in json:
                         if pair ==  value['symbol'] :
                             bidRates.append(value['bidRate'])
                             askRates.append(value['askRate']) 
                 
-           
+
                 lastPrices =  list(map(float, lastPrices))
                 bidRates = list(map(float, bidRates))
                 askRates =list(map(float, askRates))
-                if 0.0 in askRates or 0.0 in bidRates: continue
+                if len(lastPrices) <3 : 
+                    break
 
-                
-                bidRoute_result = 0 
-                askRoute_result = 0
-                
-                if pairs[3] == 0:
-                    bidRoute_result = (1 /  askRates[0]) / askRates[1] *   bidRates[2]
-                else:
-                    askRoute_result = (1 *  bidRates[0]) / askRates[2] *   bidRates[1] 
+                if 0.0 in askRates or 0.0 in bidRates: 
+                    continue
+
+             
+                bidRoute_result = (1 /  askRates[0]) / askRates[1] *   bidRates[2]
+                #askRoute_result = (1 *  bidRates[0]) / askRates[2] *   bidRates[1] 
                 
  
-                if askRoute_result > 1 :
-                    percentage_profit =( (askRoute_result - 1 ) / 1 ) * 100
-                    print(pairs)
-                    print('AskRoute Percentage Profit: %.2f' %  percentage_profit  + '%')
-                    
                 if bidRoute_result > 1 :
                     percentage_profit =( (bidRoute_result - 1 ) / 1 ) * 100
                     print(pairs)
-                    print('BidRoute Percentage Profit:  %.2f' %  percentage_profit  + '%')
+                    print('BidRoute Percentage Profit: %.2f' %  percentage_profit  + '%')
                     
+                    #check_open_order  = self.check_openOrder()
+                    #if  check_open_order == False: 
+                    #    maxAmounts = self.getMaxAmount(lastPrices, responses, status)
+#
+                    #    print ('No open order..')
+                         
+                    
+                    
+                
+               
                          
                         
                 
