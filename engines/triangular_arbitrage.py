@@ -5,6 +5,7 @@ import os
 import sys
 from engines.exchanges.loader import EngineLoader
 import json
+import pandas as pd
 
 class CryptoEngineTriArbitrage(object):
     def __init__(self, exchange, mock=False):
@@ -31,6 +32,7 @@ class CryptoEngineTriArbitrage(object):
             try:
                 if  self.hasOpenOrder: #We always assume in the start of the program that we have open orders
                     self.check_openOrder()
+                    time.sleep(2)
                 elif self.check_balance():           
                     bookStatus = self.check_orderBook()
                     if bookStatus['status']:
@@ -93,40 +95,30 @@ class CryptoEngineTriArbitrage(object):
         #Here we are interesting to see prices only from stable coins and fiat currencies
         #0 - BID 
         #1 - ASK
-        all_combinations = [
-             ['USD-EUR' , 'BTC-USD', 'BTC-EUR' , 0]
-            ,['USDT-EUR' , 'BTC-USDT', 'BTC-EUR' , 0]
-            ,['USD-EUR' , 'ETH-USD', 'ETH-EUR' , 0]
-            ,['USDT-EUR' , 'ETH-USDT', 'ETH-EUR' , 0]
-            ,['USD-EUR' , 'ADA-USD', 'ADA-EUR' , 0]
-            ,['USDT-EUR' , 'ADA-USDT', 'ADA-EUR' , 0]
-            ,['USD-EUR' , 'BAND-USD', 'BAND-EUR' , 0]
-            ,['USDT-EUR' , 'BAND-USDT', 'BAND-EUR' , 0]
-            ,['USD-EUR' , 'XLM-USD', 'XLM-EUR' , 0]
-            ,['USDT-EUR' , 'XLM-USDT', 'XLM-EUR' , 0]
-            ,['USD-EUR' , 'XRP-USD', 'XRP-EUR' , 0]
-            ,['USDT-EUR' , 'XRP-USDT', 'XRP-EUR' , 0]
-            ,['USD-EUR' , 'BSV-USD', 'BSV-EUR' , 0]
-            ,['USDT-EUR' , 'BSV-USDT', 'BSV-EUR' , 0]
-            ,['USD-EUR' , 'DOT-USD', 'DOT-EUR' , 0]
-            ,['USDT-EUR' , 'DOT-USDT', 'DOT-EUR' , 0]
-            ,['USD-EUR' , 'GRT-USD', 'GRT-EUR' , 0]
-            ,['USDT-EUR' , 'GRT-USDT', 'GRT-EUR' , 0]
-            ,['USD-EUR' , 'AAVE-USD', 'AAVE-EUR' , 0]
-            ,['USDT-EUR' , 'AAVE-USDT', 'AAVE-EUR' , 0]
+        
+        
+        all_combinations = []
+        df_all_combinations = pd.read_csv('all_triangulars_arbitrage.csv')
+        for ind in df_all_combinations.index:
+            all_combinations.append([df_all_combinations['TickerPairA'][ind],
+                                     df_all_combinations['TickerPairB'][ind],
+                                     df_all_combinations['TickerPairC'][ind],
+                                     df_all_combinations['Route'][ind]])
          
-            ,['BTC-USDT' , 'ETH-BTC', 'ETH-USDT' , 0]
-            ,['ETH-USDT' , 'BAND-ETH', 'BAND-USDT' , 0]
-          
        
              
-            
-            ]
          
         while True:
             rs  = self.engine.get_all_tickers_of_bittrex()
             response = self.send_request([rs])
             json = response[0].json()
+            
+            unique_symbols = list()
+            for pair in json: 
+                tickerpair = pair['symbol']
+                tickerpair =  tickerpair.replace('-', ' ')
+               
+            
         
             for pairs in all_combinations:
                 lastPrices = []
@@ -157,6 +149,7 @@ class CryptoEngineTriArbitrage(object):
                 lastPrices =  list(map(float, lastPrices))
                 bidRates = list(map(float, bidRates))
                 askRates =list(map(float, askRates))
+                if 0.0 in askRates or 0.0 in bidRates: continue
 
                 
                 bidRoute_result = 0 
@@ -201,7 +194,7 @@ class CryptoEngineTriArbitrage(object):
  
         responses = self.send_request(rs)
        
-        '''It supposed that we have an arbitrage opporunity since the bidRoute_result is greater than 1 
+        '''It supposed that we have an arbitrage opportunity since the bidRoute_result is greater than 1 
         or askRoute_result is greater than 1 
         '''
        
@@ -215,7 +208,7 @@ class CryptoEngineTriArbitrage(object):
         
         '''
         bidRoute_result = (1 / responses[0].parsed['ask']['price']) / responses[1].parsed['ask']['price'] * responses[2].parsed['bid']['price']  
-   
+    
         if bidRoute_result > 1:
             print('Bidroute :'+ str(bidRoute_result) )
             percentage_profit =( (bidRoute_result - 1 ) / 1 ) * 100
@@ -231,10 +224,11 @@ class CryptoEngineTriArbitrage(object):
         '''
                 
         askRoute_result = (1 * responses[0].parsed['bid']['price']) / responses[2].parsed['ask']['price']   * responses[1].parsed['bid']['price']
+         
         if askRoute_result > 1 :
-            print('Askroute :'+ str(askRoute_result) )
+         #   print('Askroute :'+ str(askRoute_result) )
             percentage_profit =( (askRoute_result - 1 ) / 1 ) * 100
-            print('Percentage Profit:' + str(percentage_profit))
+           # print('Percentage Profit:' + str(percentage_profit))
         
         # Max amount for bid route & ask routes can be different and so less profit
         if bidRoute_result > 1 or \
@@ -245,7 +239,7 @@ class CryptoEngineTriArbitrage(object):
         else:
             status = 0 # do nothing
  
-        if status   > 0  :
+        if status   >  0  :
             #Since that now has appeared an arbitrage we have to check if with the fees we will have still a profit.
             maxAmounts = self.getMaxAmount(lastPrices, responses, status)
             fee = 0
@@ -255,49 +249,51 @@ class CryptoEngineTriArbitrage(object):
             
             bidRoute_profit = (bidRoute_result - 1) * float(lastPrices[0]) * maxAmounts[0]
             askRoute_profit = (askRoute_result - 1) * float(lastPrices[1]) * maxAmounts[1]
-            print ('bidRoute_profit - {0} askRoute_profit - {1} fee - {2}'.format( bidRoute_profit, askRoute_profit, fee))
-            print('Profit-'+ str( bidRoute_profit - fee ))
-            print('Profit-'+ str( askRoute_profit - fee ))
+            #print ('bidRoute_profit - {0} askRoute_profit - {1} fee - {2}'.format( bidRoute_profit, askRoute_profit, fee))
+            #print('Profit-'+ str( bidRoute_profit - fee ))
+            #print('Profit-'+ str( askRoute_profit - fee ))
             if status == 1 and bidRoute_profit - fee > self.minProfitUSDT:
+                print (strftime('%Y%m%d%H%M%S') + ' Ask Route: Result - {0} Profit - {1} Fee - {2}'.format(askRoute_result, askRoute_profit, fee))
+
                 orderInfo = [
                     {
                         "tickerPair": self.exchange['tickerPairA'],
-                        "action": "bid",
+                        "action": "ask",
                         "price": responses[0].parsed['ask']['price'],
                         "amount":  maxAmounts[1]   
                     },
                     {
                         "tickerPair": self.exchange['tickerPairB'],
-                        "action": "bid",
+                        "action": "ask",
                         "price": responses[1].parsed['ask']['price'],
                         "amount": maxAmounts[2]   
                     },
                     {
                         "tickerPair": self.exchange['tickerPairC'],
-                        "action": "ask",
+                        "action": "bid",
                         "price": responses[2].parsed['bid']['price'],
                         "amount": maxAmounts[2]  
                     }                                        
                 ]
                 return {'status': 1, "orderInfo": orderInfo}
-            elif status == 2 and askRoute_profit - fee > self.minProfitUSDT:
+            elif status == 10 and askRoute_profit - fee > self.minProfitUSDT:
                 print (strftime('%Y%m%d%H%M%S') + ' Ask Route: Result - {0} Profit - {1} Fee - {2}'.format(askRoute_result, askRoute_profit, fee))
                 orderInfo = [
                     {
                         "tickerPair": self.exchange['tickerPairA'],
-                        "action": "ask",
+                        "action": "bid",
                         "price": responses[0].parsed['bid']['price'],
                         "amount": maxAmounts[1]  
                     },
                     {
                         "tickerPair": self.exchange['tickerPairB'],
-                        "action": "ask",
+                        "action": "bid",
                         "price": responses[1].parsed['bid']['price'],
                         "amount": maxAmounts[2]   
                     },
                     {
                         "tickerPair": self.exchange['tickerPairC'],
-                        "action": "bid",
+                        "action": "ask",
                         "price": responses[2].parsed['ask']['price'],
                         "amount":maxAmounts[2]   
                     }                                        
@@ -316,19 +312,27 @@ class CryptoEngineTriArbitrage(object):
             else: bid_ask = 1
             # switch for ask route
             if status == 2: bid_ask *= -1
+            
             bid_ask = 'bid' if bid_ask == 1 else 'ask'
 
             maxBalance = min(orderBookRes[index].parsed[bid_ask]['amount'], self.engine.balance[self.exchange[tickerIndex]])
 
 
-            USDT = maxBalance * float(lastPrices[index]) * (1 - self.engine.feeRatio)
+            lastPrices =  list(map(float, lastPrices))
+             
+            USDT = maxBalance / ( lastPrices[index]  * (1 - self.engine.feeRatio))
+            
             if not maxUSDT or USDT < maxUSDT: 
                 maxUSDT = USDT       
 
         maxAmounts = []
         for index, tickerIndex in enumerate(['tickerA', 'tickerB', 'tickerC']):
             # May need to handle scientific notation
-            maxAmounts.append(maxUSDT / float(lastPrices[index]))
+            if lastPrices[index] < 1 :
+                maxAmounts.append(maxUSDT /  lastPrices[index] ) 
+            else:
+                maxAmounts.append(maxUSDT *  lastPrices[index] ) 
+
 
         return maxAmounts
 
@@ -369,7 +373,7 @@ class CryptoEngineTriArbitrage(object):
     '''
     def run(self):
 
-      self.check_the_whole_order_book()
-            #    self.start_engine()
+       self.check_the_whole_order_book()
+       self.start_engine()
         
  

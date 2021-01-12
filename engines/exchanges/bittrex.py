@@ -9,12 +9,14 @@ class ExchangeEngine(ExchangeEngineBase):
         self.API_URL = 'https://api.bittrex.com/'
         self.apiVersion = 'v3'
         self.sleepTime = 2
-        self.feeRatio = 0.0035 #Trades of Bittrex have 0.35 % of fees
+        self.feeRatio = 0.0025 #Trades of Bittrex have 0.0035 % of fees
         self.sync = True
        
     #Creates different knds of requests depend on the call that we want to make. i.e. place order, get amounts etc.              
     def _create_request(self, command, httpMethod, params={}, hook=None):          
         command = '{0}/{1}'.format(self.apiVersion, command)
+        command = command.replace('EUR-USDT', 'USDT-EUR')
+        command = command.replace('USD-USDT', 'USDT-USD')
         url = self.API_URL + command
             
         if httpMethod == "GET":
@@ -115,7 +117,7 @@ class ExchangeEngine(ExchangeEngineBase):
         return res_hook    
     
     def get_ticker_orderBook_innermost(self, ticker):
-        return self._create_request('markets/'+ticker+'/orderbook?depth='+str(25), 'GET', {}, self.hook_orderBook)
+        return self._create_request('markets/'+ticker+'/orderbook?depth='+str(1), 'GET', {}, self.hook_orderBook)
                                    
     def hook_orderBook(self, r, *r_args, **r_kwargs):
         json = r.json()
