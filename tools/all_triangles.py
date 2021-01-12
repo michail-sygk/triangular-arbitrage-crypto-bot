@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+'''Alexandros Frangiadoulis 11/01/2021 '''
+
+
+>>>>>>> c1b7500202f28ca28b6a109360763fd79a822f04
 import pandas as pd
 import itertools
 from  itertools import permutations
@@ -9,6 +15,7 @@ class all_combos(object):
     
     def __init__(self):
                  
+<<<<<<< HEAD
         self.names               =  ['4ART', 'USDT', 'AAPL', 'USD', 'AAVE', 'ETH', 'EUR', 'ABBC', 'ABYSS', 'ACXT', 'ADABEAR', 'ADA', 'ADABULL', 'ADK', 'ADT', 'ADX', 'AEON', 'AID', 'AKN', 'AKRO', 'ALGO', 'AMP', 'AMZN', 'ANKR', 'ANT', 'APM', 'AR', 'ARDR', 'ARK', 'ATOM', 'BABA', 'BAL', 'BAND', 'BAT', 'BBC', 'BCH', 'BEAR', 'BFT', 'BILI', 'BLK', 'BLOCK', 'BNT', 'BNTX', 'BOA', 'BORA', 'BRZ', 'BSV', 'BTC', 'BTCV', 'BTE', 'BTM', 'BTS', 'BTT', 'BTU', 'BULL', 'BURST', 'BWF', 'BWX', 'BYND', 'CAMP', 'CBC', 'CELO', 'CGT', 'CHR', 'CKB', 'CND', 'CNS', 'CNTM', 'COMP', 'COSM', 'CPC', 'CRO', 'CRW', 'CTC', 'CTXC', 'CURE', 'CUSD', 'CVC', 'CVT', 'DAI', 'DASH', 'DAWN', 'DCR', 'DEP', 'DFI', 'DGB', 'DMT', 'DNA', 'DNT', 'DOGE', 'DOT', 'DRGN', 'DTA', 'DUCATO', 'DUSK', 'ECELL', 'ECOC', 'EDR', 'ELA', 'ELAMA', 'EMC2', 'ENG', 'ENJ', 'EOS', 'ETC', 'ETHBEAR', 'ETHBULL', 'EXCL', 'EXE', 'EXP', 'FB', 'FCT2', 'FCT', 'FIL', 'FIRO', 'FIT', 'FLETA', 'FLO', 'FME', 'FNB', 'FOR', 'FRSP', 'FSN', 'FTC', 'FX', 'GAME', 'GBYTE', 'GEO', 'GLEEC', 'GLM', 'GNC', 'GNO', 'GO', 'GOOGL', 'GRIN', 'GRS', 'GRT', 'GST', 'GTO', 'GXC', 'HBAR', 'HBD', 'HDAC', 'HDAO', 'HEDG', 'HIVE', 'HMQ', 'HNS', 'HXRO', 'HYDRO', 'ICX', 'IGNIS', 'INSTAR', 'INX', 'IOC', 'IOST', 'IOTA', 'IOTX', 'IRIS', 'JNT', 'KAI', 'KDA', 'KDAG', 'KLAY', 'KLV', 'KMD', 'KNC', 'KOK', 'KRT', 'KSM', 'LAMB', 'LBC', 'LCS', 'LINK', 'LMCH', 'LOKI', 'LOOM', 'LOON', 'LRC', 'LSK', 'LTC', 'LUCY', 'LUNA', 'MAID', 'MANA', 'MARO', 'MATIC', 'MDT', 'ME', 'MED', 'MEME', 'MER', 'META', 'MET', 'MFA', 'MFT', 'MKR', 'MOC', 'MOF', 'MONA', 'MORE', 'MRPH', 'MTL', 'MUE', 'NAV', 
 'NEO', 'NFLX', 'NGC', 'NKN', 'NLG', 'NMR', 'NPXS', 'NVT', 'NXS', 'NXT', 'OCEAN', 'OGN', 'OK', 'OMG', 'ONG', 'ONT', 'ORBS', 'OXT', 'PART', 'PAX', 'PAY', 'PFE', 'PHNX', 'PI', 'PINK', 'PIVX', 'PLA', 'PMA', 'POT', 'POWR', 'PPC', 'PROM', 'PTON', 'PTOY', 'PXL', 'QLC', 'QNT', 'QRL', 'QTUM', 'RCN', 'RDD', 'REN', 'RENBTC', 'REPV2', 'REV', 'RLC', 'RVC', 'RVN', 'SBD', 'SC', 'SDT', 'SENSO', 'SG', 'SHR', 'SIB', 'SIX', 'SKM', 'SLS', 'SNT', 'SOLVE', 'SPC', 'SPHR', 'SPIN', 'SPND', 'SPY', 'SRN', 'STC', 'STEEM', 'STMX', 'STORJ', 'STPT', 'STRAX', 'SUKU', 'SUTER', 'SXP', 'SYS', 'TEA', 'TEMCO', 'THC', 'TNC', 'TRAC', 'TRX', 'TRYB', 'TSHP', 'TSLA', 'TUBE', 'TUDA', 'TUSD', 'UBQ', 'UBT', 'UCT', 'UMA', 'UNI', 'UPEUR', 'UPP', 'UPT', 'UPUSD', 'UPXAU', 'UQC', 'URAC', 'USDC', 'USDN', 'USDS', 'UST', 'UTI', 'UTK', 'VAL', 'VANY', 'VBK', 'VDX', 'VEE', 'VET', 'VIA', 'VIB', 'VID', 'VITE', 'VLX', 'VRA', 'VRC', 'VTC', 'WAVES', 'WAXP', 'WBTC', 'WGP', 'WICC', 'WINGS', 'XDN', 'XEM', 'XHV', 'XLM', 'XMR', 'XMY', 'XRP', 'XST', 'XTP', 'XTZ', 'XUC', 'XVG', 'XWC', 'YFL', 'YOU', 'ZEC', 'ZEN', 'ZIL', 'ZRX']     
         self.all_triangles       = []
@@ -678,6 +685,11 @@ class all_combos(object):
                                       ,'ZRX-USD'
                                       ,'ZRX-USDT'
 ]
+=======
+        self.names               = ['ETH', 'XRP', 'LTC', 'USDT', 'BCH', 'LIBRA', 'XMR', 'EOS', 'BSV', 'BNB', 'BTC', 'USD', 'EUR', 'USDC', 'USDT']        
+        self.all_triangles       = []
+        self.unique_combinations = []
+>>>>>>> c1b7500202f28ca28b6a109360763fd79a822f04
     
         #Run Functions 
         self.unique_triangles()
@@ -723,11 +735,24 @@ if __name__ == "__main__":
     print('\n"""""""""""""""""""""""""""""""""""""\n')
     
     res = return_all_triangles_list()
+<<<<<<< HEAD
     df = pd.DataFrame (res,columns=['TickerPairA','TickerPairB','TickerPairC','Route'])
     df.to_csv('all_triangulars_arbitrage.csv')
     
+=======
+>>>>>>> c1b7500202f28ca28b6a109360763fd79a822f04
     
     for i in range (0,len(res)):
         print(str(i) + str(res[i]))
         
+<<<<<<< HEAD
     print('\n"""""""""""""""""""""""""""""""""""""\n')
+=======
+    print('\n"""""""""""""""""""""""""""""""""""""\n')
+
+
+
+
+
+
+>>>>>>> c1b7500202f28ca28b6a109360763fd79a822f04
