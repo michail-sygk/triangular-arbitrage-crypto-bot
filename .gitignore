@@ -1,1 +1,3 @@
-_pychache_
+/.vscode
+/engines/__pycache__
+*.pyc

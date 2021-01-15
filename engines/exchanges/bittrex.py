@@ -2,7 +2,7 @@ from mod_imports import *
 from datetime import datetime
 import urllib.parse
 
-
+ 
 
 class ExchangeEngine(ExchangeEngineBase):
     def __init__(self):
@@ -12,7 +12,6 @@ class ExchangeEngine(ExchangeEngineBase):
         self.feeRatio = 0.0025 #Trades of Bittrex have 0.0035 % of fees
         self.sync = True
        
-    #Creates different knds of requests depend on the call that we want to make. i.e. place order, get amounts etc.              
     def _create_request(self, command, httpMethod, params={}, hook=None):          
         command = '{0}/{1}'.format(self.apiVersion, command)
         command = command.replace('EUR-USDT', 'USDT-EUR')
@@ -96,7 +95,7 @@ class ExchangeEngine(ExchangeEngineBase):
                         
             for ticker in new_json:
                 r.parsed[ticker['currencySymbol'].upper()] = float(ticker['available'])
-            
+             
         return res_hook    
       
     def get_ticker_lastPrice(self, ticker):

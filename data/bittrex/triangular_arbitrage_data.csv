@@ -1,0 +1,2 @@
+Unique_id,TickerPairA,TickerPairB,TickerPairC,Percentage_profit_without_fees,Percentage_profit_with_fees,Amount_profit_USDT,maxAmount_USDT,Route,Route_Result,Alive_time,Date,Time,Status,Round,Session
+79a8b6d634e54b169cd4ea9a3af46f73,BTC-USDT,LBC-BTC,LBC-USDT,0.07%,-0.68%,-0.06574596250788495,9.6430506682125,BitRoute,7.0,0,15/01/2021,01:41:06,Blocked,1,0
