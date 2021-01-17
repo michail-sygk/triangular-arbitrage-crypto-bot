@@ -2,11 +2,11 @@
     "triangular": {
         "exchange": "bittrex",
         "keyFile": "keys/bittrex.json",
-        "tickerPairA": "BTC-USDT",
-        "tickerPairB": "GNC-BTC",
-        "tickerPairC": "GNC-USDT",
-        "tickerA": "BTC",
-        "tickerB": "GNC",
-        "tickerC": "GNC"
+        "tickerPairA": "ETH-USDT",
+        "tickerPairB": "XMR-ETH",
+        "tickerPairC": "XMR-USDT",
+        "tickerA": "ETH",
+        "tickerB": "XMR",
+        "tickerC": "XMR"
     }
 }

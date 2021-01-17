@@ -19,7 +19,7 @@ class Arbitrage_opportunity(object):
                  , status
                  , round_number
                  , session
-                 ):
+                 ): 
          
         self.TickerPairA = tickerPairA
         self.TickerPairB = tickerPairB
@@ -29,7 +29,7 @@ class Arbitrage_opportunity(object):
         self.Amount_profit_USDT = amount_profit_USDT
         self.maxAmount_USDT = maxAmount_USDT
         self.Route = route
-        self.Alive_time = 0
+        self.Alive_time ='0'
          
         now = datetime.now()
         self.Time = now.strftime("%H:%M:%S")

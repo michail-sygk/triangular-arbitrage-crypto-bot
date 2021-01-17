@@ -30,17 +30,20 @@ class Dataframe(object):
         filter_3  = self.initial_df['TickerPairB']  == row[2]
         filter_4  = self.initial_df['TickerPairC']  == row[3]
         filter_5  = self.initial_df['Round']  == row[14] - 1
+        filter_6  = self.initial_df['Route']  ==  row[8]
         temp_dataframe   = self.initial_df[filter_1 & filter_2 & filter_3 & filter_4 & filter_5 ]
         if len(temp_dataframe) > 0 : 
-            
-            old_alive_seconds = temp_dataframe['Alive_time'][0] 
+            if '-' in temp_dataframe['Alive_time'][0]:
+                old_alive_seconds = int( temp_dataframe['Alive_time'][0].split('-')[1] )
+            else:
+                old_alive_seconds = int( temp_dataframe['Alive_time'][0] ) 
             old_datetime_object  = datetime.strptime( temp_dataframe['Time'][0] ,'%H:%M:%S')
             new_date_time_object = datetime.strptime( row[12]  ,'%H:%M:%S')
-
+ 
             total_new_alive_time = new_date_time_object - old_datetime_object 
             total_new_alive_time = total_new_alive_time.seconds 
             total_new_alive_time =total_new_alive_time + old_alive_seconds
-            row[9]  = total_new_alive_time
+            row[10]  = str(old_alive_seconds) + '-' + str( total_new_alive_time)
             filter_1  =  self.initial_df['Unique_id'] != temp_dataframe['Unique_id'][0]
 
             self.initial_df = self.initial_df[filter_1]
