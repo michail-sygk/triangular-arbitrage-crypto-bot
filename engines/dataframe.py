@@ -11,7 +11,7 @@ class Dataframe(object):
         self.initial_df = pd.read_csv(dataframe_name)
         self.columns =  self.initial_df.columns
          
-    def parse_data_to_dataframe (self  ,obj ): 
+    def parse_data_to_dataframe (self  ,obj, csv_name ): 
         unique_id =  uuid.uuid4()
         row = [unique_id.hex]
         
