@@ -8,8 +8,8 @@ import json
 import pandas as pd
 from engines.arbitrage_opportunity import Arbitrage_opportunity
 from engines.dataframe import Dataframe
+import threading
  
-
 
 class CryptoEngineTriArbitrage(object):
     def __init__(self, exchange, mock=False):
@@ -176,10 +176,10 @@ class CryptoEngineTriArbitrage(object):
                     percentage_profit_bidRoute =( (bidRoute_result - 1 ) / 1 ) * 100
                     percentage_profit_askRoute =( (askRoute_result - 1 ) / 1 ) * 100
                      
-                 
+                  
               # Here We aee starting to execute the arbitrage
               #1st Step check if the profit will be more than the fees + trades
-                    if bidRoute_result < 1 and percentage_profit_bidRoute < 0.86 :
+                    if bidRoute_result > 1 and percentage_profit_bidRoute > 0.86 :
                         print('Bidroute-result' + str(bidRoute_result))
  
                         tickers = [pairs[0].split('-')[1], pairs[1].split('-')[1],pairs[2].split('-')[0]]
@@ -201,51 +201,72 @@ class CryptoEngineTriArbitrage(object):
                         [maxAmount_Pair_2,USDT_2] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
                                                                                                       responses[1].parsed['ask']['amount']  
                                                                                                      ,responses[1].parsed['ask']['price'] 
-                                                                                                     ,lastPrices[1]
-                                                                                                     , self.engine.balance[pairs[1].split('-')[1]] ,0 )
+                                                                                                     ,lastPrices[2]
+                                                                                                     , maxAmount_Pair_1 ,0 )
                         [maxAmount_Pair_3,USDT_3] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
                                                                                                   responses[2].parsed['bid']['amount']  
                                                                                                  ,responses[2].parsed['bid']['price'] 
                                                                                                  , lastPrices[2]
-                                                                                                 , self.engine.balance[pairs[2].split('-')[0]]  ,1 )
+                                                                                                 , maxAmount_Pair_2  ,1 )
 
                         maxUSDT = min([USDT_1 , USDT_2 , USDT_3])
-                        maxAmounts = []
-                        for index in range(0,3): 
-                                  maxAmounts.append(maxUSDT /  lastPrices[index] ) 
+                        maxAmounts = [maxUSDT / lastPrices[0] , maxUSDT / lastPrices[2] , maxUSDT / lastPrices[2]]
 
                         fee = 0
                         for index, amount in enumerate(maxAmounts[0:3]):
                             fee += amount * float(lastPrices[index])
                         fee *= self.engine.feeRatio
                         bidRoute_profit = (bidRoute_result - 1) * lastPrices[0] * maxAmounts[0]
- 
+                        if bidRoute_profit > 0 : break
                         if maxUSDT >  21:
                             if self.should_I_do_trade:
-                                orderInfo = [
+                                orderInfo_1 = [
                                     {
                                         "tickerPair":pairs[0],
                                         "action": "bid",
                                         "price": askRates[0],
                                         "amount": maxAmounts[0]
-                                    },
-                                    {
+                                    } ]           
+                                orderInfo_2 = [
+                                     {
                                         "tickerPair": pairs[1],
                                         "action": "bid",
                                         "price": askRates[1],
                                         "amount": maxAmounts[1]
-                                    },
-                                    {
+                                    }
+                                    ] 
+                                orderInfo_3 = [ 
+                                                {
                                         "tickerPair": pairs[2],
                                         "action": "ask",
                                         "price": bidRates[2],
                                         "amount": maxAmounts[2]
-                                    }                                        
-                                                                ]           
-                                self.place_order(orderInfo)
+                                    }            
+                                               ]
+
+                                t1 = threading.Thread(target = self.place_order, args = [orderInfo_1[0] , 0])
+                                t2 = threading.Thread(target = self.place_order, args = [orderInfo_2[0] , 0.001])
+                                t3 = threading.Thread(target = self.place_order, args = [orderInfo_3[0] , 0.002])
+
+                                
+ 
+                                t1.start()
+                                t2.start()
+                                t3.start()
+                                t1.join()
+                                t2.join()
+                                t3.join()
+                                
+                                
+                                
+                                
+                                
+                                
                                 while self.check_openOrder():
-                                    print('There are still open orders..Process can not continue..')
-                                    time.sleep(1)
+                                    try:
+                                        print('There are still open orders..Process can not continue..')
+                                        time.sleep(1)
+                                    except: pass 
 
                             print(pairs)
                             print('BidRoute Percentage Profit: %.2f' %  percentage_profit_bidRoute  + '%')
@@ -268,98 +289,7 @@ class CryptoEngineTriArbitrage(object):
                             print ('Profit:' + str(bidRoute_profit - fee))
 
                     
-                    if askRoute_result > 1 and percentage_profit_askRoute > 0.86 :
-                            
-                            tickers = [pairs[0].split('-')[0], pairs[1].split('-')[0],pairs[2].split('-')[1]]
 
-                            rs = [self.engine.get_ticker_orderBook_innermost(pairs[0]),
-                                  self.engine.get_ticker_orderBook_innermost(pairs[1]),
-                                  self.engine.get_ticker_orderBook_innermost(pairs[2]),
-                                  self.engine.get_balance( tickers),
-
-                                  ]
-                            responses = self.send_request(rs)
-                            self.engine.balance = responses[3].parsed
-                                    
-                            [maxAmount_Pair_1,USDT_1] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                                          responses[0].parsed['bid']['amount']  
-                                                                                                         ,responses[0].parsed['bid']['price'] 
-                                                                                                         , responses[0].parsed['bid']['price'] 
-                                                                                                         ,self.engine.balance[pairs[0].split('-')[0]] 
-                                                                                                         , 1 )
-                            [maxAmount_Pair_2,USDT_2] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                                          responses[1].parsed['bid']['amount']  
-                                                                                                         ,responses[1].parsed['bid']['price'] 
-                                                                                                         ,lastPrices[1]
-                                                                                                         , self.engine.balance[pairs[1].split('-')[0]] ,1 )
-                            [maxAmount_Pair_3,USDT_3] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                                          responses[2].parsed['ask']['amount']  
-                                                                                                         ,responses[2].parsed['ask']['price'] 
-                                                                                                         ,responses[2].parsed['ask']['price'] 
-                                                                                                         , self.engine.balance[pairs[2].split('-')[1]]  ,0 )
- 
-                            maxUSDT = min([USDT_1 , USDT_2 , USDT_3])
-                            maxAmounts = []
-                           
-                            for index in range(0,3): 
-                                      maxAmounts.append(maxUSDT /  lastPrices[index] ) 
-                            
-                            fee = 0 
-                            for index, amount in enumerate(maxAmounts[0:3]):
-                                fee += amount * lastPrices[index]
-                            fee *= self.engine.feeRatio
-                            askRoute_profit = (askRoute_result - 1) * lastPrices[1] * maxAmounts[1]    
-                            if askRoute_profit < 0: break    
-                            if maxUSDT >  21:
-                                if self.should_I_do_trade:
-                                    orderInfo = [
-                                    {
-                                        "tickerPair": pairs[0],
-                                        "action": "ask",
-                                        "price": bidRates[0],
-                                        "amount": maxAmounts[0]
-                                    },
-                                    {
-                                        "tickerPair": pairs[1],
-                                        "action": "ask",
-                                        "price": bidRates[1],
-                                        "amount": maxAmounts[1]
-                                    },
-                                    {
-                                        "tickerPair":pairs[2],
-                                        "action": "bid",
-                                        "price": askRates[2],
-                                        "amount": maxAmounts[2]
-                                    }                                        
-                                                                         ]    
-                                    self.place_order(orderInfo)
-                                    while self.check_openOrder():
-                                        print('There are still open orders..Process can not continue..')
-                                        time.sleep(1)
-                                        
-
-
-     
-                                print(pairs)
-                                print('AskRoute Percentage Profit: %.2f' %  percentage_profit_askRoute  + '%')
-                                profit_fee = askRoute_profit - fee
-                                net_pecentage_profit =  (profit_fee  / maxUSDT) * 100
-                                new_arbi_opp = Arbitrage_opportunity(  pairs[0]
-                                                                      ,pairs[1]
-                                                                      ,pairs[2]
-                                                                      ,"{:.2f}".format(percentage_profit_askRoute) +'%' 
-                                                                      ,"{:.2f}".format(net_pecentage_profit) + '%' 
-                                                                      ,askRoute_profit - fee 
-                                                                      ,maxUSDT
-                                                                      ,'AskRoute'
-                                                                      , askRoute_result
-                                                                      ,'Completed'
-                                                                      , round_number
-                                                                      , session
-                                                                      )
-                                dataframe_object_opportunities.parse_data_to_dataframe(new_arbi_opp,'fullfilled_triangular_arbitrage.csv' )
-
-    
 
                 round_number = round_number + 1         
             except Exception as e : 
@@ -585,27 +515,32 @@ class CryptoEngineTriArbitrage(object):
 
             time.sleep(3) 
     #This is the function for placing an order
-    def place_order(self, orderInfo):
-        print (orderInfo)
-        rs = []
-        for order in orderInfo:
+    def place_order(self, orderInfo , waiting_time =0 ):
+        responses = False
+        time.sleep(waiting_time)
+        while responses == False:     
+            print('Order has been sent..')
+            print (orderInfo)
+            rs = []
+ 
             rs.append(self.engine.place_order(
-                order['tickerPair'],
-                order['action'],
-                order['amount'],
-                order['price'])
-            )
+                    orderInfo['tickerPair'],
+                    orderInfo['action'],
+                    orderInfo['amount'],
+                    orderInfo['price'])
+                )
 
-        if  self.mock:
-            responses = self.send_request(rs)
+            if  self.mock:
+                responses = self.send_request(rs)
 
-        self.hasOpenOrder = True
-        self.openOrderCheckCount = 0
-
-    #This is the function which is responsible to send the requests and it returns us the response from the API
+            self.hasOpenOrder = True
+            self.openOrderCheckCount = 0
+    
+     #This is the function which is responsible to send the requests and it returns us the response from the API
     def send_request(self, rs):
         responses = grequests.map( rs )
         for res in responses:
+            if res.status_code == 409 : return False
             if not res:
                 print (responses)
                 raise Exception
@@ -620,7 +555,7 @@ class CryptoEngineTriArbitrage(object):
     Choose the ckeck_the_whole_order_book or start_engine     
     '''
     def run(self):
-        self.get_data_from_the_whole_orderbook()
+        self.place_orders_to_arbitrages()
       # self.start_engine()
         
  

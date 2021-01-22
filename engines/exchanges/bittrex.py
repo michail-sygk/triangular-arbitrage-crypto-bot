@@ -9,7 +9,7 @@ class ExchangeEngine(ExchangeEngineBase):
         self.API_URL = 'https://api.bittrex.com/'
         self.apiVersion = 'v3'
         self.sleepTime = 2
-        self.feeRatio = 0.0025 #Trades of Bittrex have 0.0035 % of fees
+        self.feeRatio = 0.0020 #Trades of Bittrex have 0.0035 % of fees
         self.sync = True
        
     def _create_request(self, command, httpMethod, params={}, hook=None):          
@@ -25,11 +25,11 @@ class ExchangeEngine(ExchangeEngineBase):
         
         headers = {}
 
-        api_key =   '89b69e40a3464285b8905335c5c36b2d'
+        api_key =   '5f05fce4803a4d8cbc4707fc30310fc3'
         #    api_key =   self.key['public']  
     
         # secret = self.key['private']
-        secret =  'b7952007d413464998d6ab31e39a5243'
+        secret =  'ae149cf3144c45c891e1cc7092c5d331'
         secret = bytes(secret.encode("utf-8"))
     
         timestamp = format(int(time.time() * 1000))

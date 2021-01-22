@@ -22,8 +22,8 @@ class Dataframe(object):
         
         buffer_df.loc[0]  =  self.calculate_how_long_lasts_an_arbitrage(row)
         self.initial_df = self.initial_df.append(buffer_df)   
-        self.initial_df.to_csv('data/bittrex/triangular_arbitrage_data.csv' , index = False)
-
+        self.initial_df.to_csv('data/bittrex/'+ csv_name , index = False)
+ 
     def calculate_how_long_lasts_an_arbitrage(self , row ):
         filter_1  = self.initial_df['Session']  == row[15]
         filter_2  = self.initial_df['TickerPairA']  == row[1]
