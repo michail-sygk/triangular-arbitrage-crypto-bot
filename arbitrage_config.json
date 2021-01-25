@@ -1,6 +1,6 @@
 {
     "triangular": {
-        "exchange": "bittrex",
+        "exchange": "bitrex",
         "keyFile": "keys/bittrex.json",
         "tickerPairA": "ETH-USDT",
         "tickerPairB": "XMR-ETH",

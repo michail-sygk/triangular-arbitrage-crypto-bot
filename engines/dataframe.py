@@ -33,10 +33,10 @@ class Dataframe(object):
         filter_6  = self.initial_df['Route']  ==  row[8]
         temp_dataframe   = self.initial_df[filter_1 & filter_2 & filter_3 & filter_4 & filter_5 ]
         if len(temp_dataframe) > 0 : 
-            if '-' in temp_dataframe['Alive_time'][0]:
-                old_alive_seconds = int( temp_dataframe['Alive_time'][0].split('-')[1] )
-            else:
+            if   0  < float(temp_dataframe['Alive_time'][0] ) :
                 old_alive_seconds = int( temp_dataframe['Alive_time'][0] ) 
+            else:
+                old_alive_seconds = int( temp_dataframe['Alive_time'][0].split('-')[1] )
             old_datetime_object  = datetime.strptime( temp_dataframe['Time'][0] ,'%H:%M:%S')
             new_date_time_object = datetime.strptime( row[12]  ,'%H:%M:%S')
  
