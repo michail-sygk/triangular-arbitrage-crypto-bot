@@ -254,8 +254,8 @@ class CryptoEngineTriArbitrage(object):
                                                ]
 
                                 t1 = threading.Thread(target = self.place_order, args = [orderInfo_1[0] , 0])
-                                t2 = threading.Thread(target = self.place_order, args = [orderInfo_2[0] , 0.001])
-                                t3 = threading.Thread(target = self.place_order, args = [orderInfo_3[0] , 0.002])
+                                t2 = threading.Thread(target = self.place_order, args = [orderInfo_2[0] , 0.004])
+                                t3 = threading.Thread(target = self.place_order, args = [orderInfo_3[0] , 0.008])
 
                                 
  

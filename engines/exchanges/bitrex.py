@@ -135,7 +135,7 @@ class ExchangeEngine(ExchangeEngineBase):
     def get_open_order(self):
         return self._create_request('orders/open', 'GET', {}, self.hook_openOrder)
     
-    def hook_openOrder(self, r, *r_args, **r_kwargs):
+    def hook_openOrder(self, r, *r_args, **r_kwargs):                                                                                                                           
         json = r.json()
         r.parsed = []
         for order in json:
