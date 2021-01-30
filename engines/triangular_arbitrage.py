@@ -160,7 +160,7 @@ class CryptoEngineTriArbitrage(object):
               # Ready to check for the arbitrage
 
                # if the askRoute_result is greater than 1  there is a chance to exist Arbitrage.. 
-                bidRoute_result = (1 / bidRates [0]) / askRates[1]  * bidRates[2]
+                bidRoute_result = (1 / askRates [0]) / askRates[1]  * bidRates[2]
                        
                   
               # Here We aee starting to execute the arbitrage
