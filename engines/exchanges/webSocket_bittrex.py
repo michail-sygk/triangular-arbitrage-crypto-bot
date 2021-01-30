@@ -516,6 +516,8 @@ async def subscribe():
       'orderbook_USDT-EUR_1'
         ]
   
+  
+  
   response = await invoke('Subscribe', channels)
   for i in range(len(channels)):
     if response[i]['Success']:
@@ -554,7 +556,7 @@ async def on_balance(msg):
   await print_message('Tickers', msg)
   
 async def on_Orderbook(msg):
-  await print_message('Orderbook', msg)
+  await 00('Orderbook', msg)
 
 async def print_message(title, msg):
   decoded_msg = await process_message(msg[0])
