@@ -10,34 +10,33 @@ class Arbitrage_opportunity(object):
                  , tickerPairA 
                  , tickerPairB 
                  , tickerPairC 
-                 , percentage_profit_without_fees
-                 , percentage_profit_with_fees
-                 , amount_profit_USDT
-                 , maxAmount_USDT
+                 , Percentage_Profit
+                 , Profit
+                 , maxAmount
+                 , start_ticker
                  , route
-                 , route_Result
-                 , status
                  , round_number
                  , session
                  ): 
-         
+     
+        self.Start_ticker = start_ticker
         self.TickerPairA = tickerPairA
         self.TickerPairB = tickerPairB
         self.TickerPairC = tickerPairC
-        self.Percentage_profit_without_fees =  percentage_profit_without_fees
-        self.Percentage_profit_with_fees =  percentage_profit_with_fees
-        self.Amount_profit_USDT = amount_profit_USDT
-        self.maxAmount_USDT = maxAmount_USDT
+        
+        self.Percentage_Profit = Percentage_Profit
+        self.Profit = Profit
+        self.maxAmount = maxAmount
         self.Route = route
-        self.Alive_time ='0'
+        self.Alive_time ='0:00:00.000000'
          
         now = datetime.now()
-        self.Time = now.strftime("%H:%M:%S")
-    
+        self.Time = now.strftime("%H:%M:%S.%f")
         today = date.today()
         self.Date = today.strftime("%d/%m/%Y")
-        self.Route_Result = route_Result
-        self.Status = status   #Status : Completed, Inefficient Amount in market , Open  
         self.Round = round_number
         self.Session = session
     
+
+
+ 

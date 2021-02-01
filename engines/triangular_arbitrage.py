@@ -33,7 +33,7 @@ class CryptoEngineTriArbitrage(object):
         self.dataframe_object_opportunities = Dataframe(
             'data/bittrex/triangular_arbitrage_data.csv')
         self.dataframe_all_arbitrage_combinations = Dataframe(
-            'data/bittrex/triangular_arbitrage_selected_combinations.csv')
+            'data/bittrex/triangular_arbitrage_all_combinations.csv')
         self.all_combinations = self.get_all_combinations()
         self.session = self.dataframe_object_opportunities.return_dataframe()['Session'].iloc[-1] + 1
         self.should_I_do_trade   = True
@@ -44,9 +44,7 @@ class CryptoEngineTriArbitrage(object):
         responses = self.send_request(rs)
         self.engine.balance = responses[0].parsed
         print( 'Skata')
-
- 
-        
+       
     def get_all_combinations(self):
         all_combinations = []
         df = self.dataframe_all_arbitrage_combinations.return_dataframe()
@@ -171,13 +169,11 @@ class CryptoEngineTriArbitrage(object):
                     
 
 
-                self.round_number =self.round_number + 1         
+                        
         except Exception as e : 
             print(e)
             time.sleep(5)
             pass
-
-            
  
     def place_the_order_of_the_bidRoute(self , pairs ,askRates,bidRates , askAmounts , bidAmounts ):
         max_Amount_1  =   ( self.engine.balance[pairs[0].split('-')[1]] / askRates[0] )  / askRates[1]
@@ -191,15 +187,15 @@ class CryptoEngineTriArbitrage(object):
 
         maxAmounts =  [0, 0  ,0 ]
 
-        maxAmounts[0] =   minimum_Amount * askRates[1] * (1 - self.engine.feeRatio)    
-        maxAmounts[1] = minimum_Amount * (1 - self.engine.feeRatio)    
-        maxAmounts[2] =  minimum_Amount * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio) 
+        maxAmounts[0] =   minimum_Amount*0.99  * askRates[1]  
+        maxAmounts[1] = minimum_Amount*0.99  * (1 - self.engine.feeRatio)    
+        maxAmounts[2] =  minimum_Amount*0.99  * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio) 
                         
-        final_result =  (maxAmounts[2] * bidRates[2])  * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio)
-        profit = final_result -( maxAmounts[0]  * askRates[0])
-        minimum_Amount = (minimum_Amount * askRates[1]) * askRates[0]
+        final_result =  (maxAmounts[2] * bidRates[2]*0.99)  * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio)
+        profit = final_result -( maxAmounts[0]*0.99  * askRates[0])
+        minimum_Amount = (minimum_Amount*0.99 * askRates[1]) * askRates[0]
                        
-        if minimum_Amount >  22 and profit > 0 and self.should_I_do_trade == True:
+        if minimum_Amount >  22 and profit > 0.1 and self.should_I_do_trade == True:
             print('Profit:' + str(profit))
             print(pairs)
             orderInfo_1 = [
@@ -225,7 +221,7 @@ class CryptoEngineTriArbitrage(object):
                     "amount": maxAmounts[2]
                 }            
                            ]
-            t1 = threading.Thread(target = self.place_order, args = [orderInfo_1[0] , 0 ])
+            t1 = threading.Thread(target = self.place_order, args = [orderInfo_1[0]  ])
             t2 = threading.Thread(target = self.place_order, args = [orderInfo_2[0] , 0.001 ])
             t3 = threading.Thread(target = self.place_order, args = [orderInfo_3[0] , 0.002])
 
@@ -262,209 +258,158 @@ class CryptoEngineTriArbitrage(object):
                                                   , self.session
                                                   )
             self.dataframe_object_opportunities.parse_data_to_dataframe(new_arbi_opp,'fullfilled_triangular_arbitrage.csv')
-                             
-
-        
+                                
     def get_data_from_the_whole_orderbook(self):
-        # Load all  the necessary csv and getting the combinations
+        while True:
             try:
-                for pairs in self.all_combinations:
-                    '''
-                    It's necessary to calculate excactly how much is the profit for our arbitrage opportunities.This can happen only if 
-                    we transfer the neccesary amounts in a stable currency.
-                    Now I will take the necessary pairs and I will see kind of amount I have in USDT detecting their last prices.
-                    '''
-                    tickerA = pairs[0].replace('-', ' ').split()[0] + '-USDT'
-                    tickerB = pairs[1].replace('-', ' ').split()[0] + '-USDT'
-                    tickerC = pairs[1].replace('-', ' ').split()[0] + '-USDT'
+                for pairs in self.all_combinations:                
+                    try:             
+                        bidRates =  [
+                                     self.initial_df_with_all_tickers.at[pairs[0] , 'BidRate'],
+                                     self.initial_df_with_all_tickers.at[pairs[1] , 'BidRate'],
+                                     self.initial_df_with_all_tickers.at[pairs[2] , 'BidRate']
+                                     ]
+                        bidAmounts  = [
+                            self.initial_df_with_all_tickers.at[pairs[0] , 'BidAmount'],
+                            self.initial_df_with_all_tickers.at[pairs[1] , 'BidAmount'],
+                            self.initial_df_with_all_tickers.at[pairs[2] , 'BidAmount']
+                            ] 
 
-                    tickers = [tickerA, tickerB, tickerC]
-
-                    # Some minor changes in the string of pairs
-                    for i in range(0, len(tickers)):
-                        if tickers[i] == 'USDT-USDT':
-                            tickers[i] = 'USDT-USD'
-                            continue
-                        if tickers[i] == 'USD-USDT':
-                            tickers[i] = 'USDT-USD'
-                            continue
-                        if tickers[i] == 'EUR-USDT':
-                            tickers[i] = 'USDT-EUR'
-                            continue
-                        if tickers[i] == 'KMD-USDT':
-                            tickers[i] = 'KMD-USD'
-                            continue
-
-                    # Getting the differences with USDT/USD in order to calculate excactly the profit. Maybe it will
-                    # be a little bit differ the final result
-                    lastPrices = []
-                    for ticker in tickers:
-                        for value in  self.initial_json :
-                            if ticker == value['symbol']:
-                                lastPrices.append(value['lastTradeRate'])
-                                break
-
-                                # Getting the bidRate and the askRate from the json to calculate if it exists
-                                # arbitrage opportunity.
-                    # If for some pairs will not find pairs at all
-                    bidRates = []
-                    askRates = []
-                    for pair in pairs:
-                        for value in  self.initial_json :
-                            if pair == value['symbol']:
-                                bidRates.append(value['bidRate'])
-                                askRates.append(value['askRate'])
-
-                    lastPrices = list(map(float, lastPrices))
-                    bidRates = list(map(float, bidRates))
-                    askRates = list(map(float, askRates))
-
-                    if len(lastPrices) < 3:
-                        break
-                    if 0.0 in askRates or 0.0 in bidRates:
+                        askRates  =  [
+                            self.initial_df_with_all_tickers.at[pairs[0] , 'AskRate'],
+                            self.initial_df_with_all_tickers.at[pairs[1] , 'AskRate'],
+                            self.initial_df_with_all_tickers.at[pairs[2] , 'AskRate']]  
+                        askAmounts =  [
+                            self.initial_df_with_all_tickers.at[pairs[0] , 'AskAmount'],
+                            self.initial_df_with_all_tickers.at[pairs[1] , 'AskAmount'],
+                            self.initial_df_with_all_tickers.at[pairs[2] , 'AskAmount']]
+                    except: 
+                        pass  
                         continue
-
-                    # Ready to check for the arbitrage
-
-                    # if the askRoute_result is greater than 1  there is a chance to exist Arbitrage..
-                    bidRoute_result = (1 / askRates[0]) / askRates[1] * bidRates[2]
-                    askRoute_result = (1 * bidRates[0]) / askRates[2] * bidRates[1]
                     
-                    percentage_profit_bidRoute = ((bidRoute_result - 1) / 1) * 100
-                    percentage_profit_askRoute = ((askRoute_result - 1) / 1) * 100
+                    
+                    bidRates = list(map(float, bidRates     ))
+                    askRates =list(map(float, askRates      ))
+                    askAmounts = list(map(float ,askAmounts ))
+                    bidAmounts = list(map(float , bidAmounts))
 
-                    # Here We aee starting to execute the arbitrage
-                    # 1st Step check if the profit will be more than the fees + trades
-                    if bidRoute_result > 1 and percentage_profit_bidRoute   > 0.6:
-                        print('BidRoute greater than 1..')
-                        print(pairs)
-                        self.parse_to_dataframe_bidRoute(pairs , lastPrices  , bidRoute_result , percentage_profit_bidRoute)          
-                                      
+                    if len(askRates)<3 or len(bidRates) < 3:
+                       continue
+                    if 0.0 in askRates or 0.0 in bidRates: 
+                        continue
+                    if 0.0 in askAmounts or 0.0 in bidAmounts: 
+                        continue
+                    
+                  # Ready to check for the arbitrage
 
-                    if askRoute_result > 1 and percentage_profit_askRoute > 0.6:
-                        print('AskRoute greater than 1..')                       
-                        print(pairs) 
-                        self.parse_to_dataframe_askRoute(pairs , lastPrices  , askRoute_result , percentage_profit_askRoute)
+                   # if the askRoute_result is greater than 1  there is a chance to exist Arbitrage.. 
+                    bidRoute_result = (1 / askRates [0]) / askRates[1]  * bidRates[2]
+                    askRoute_result =  (1 * bidRates[0])  / askRates[2] * bidRates[1]       
 
-                       
-
-                self.round_number = self.round_number + 1
-            except Exception as e:
-                print(e)
-                time.sleep(5)
-                pass
-  
-    def parse_to_dataframe_bidRoute(self , pairs ,  lastPrices  , bidRoute_result  , percentage_profit_bidRoute ):
+                  # Here We aee starting to execute the arbitrage
+                  #1st Step check if the profit will be more than the fees + trades
+                    if bidRoute_result  >  1  :
+                        self.parse_to_dataframe_bidRoute(pairs ,askRates,bidRates,askAmounts , bidAmounts )
+                    
+                    if askRoute_result  >  1  :
+                        self.parse_to_dataframe_askRoute(pairs ,askRates,bidRates,askAmounts , bidAmounts )
                         
-                        rs = [self.engine.get_ticker_orderBook_innermost(pairs[0]),
-                              self.engine.get_ticker_orderBook_innermost(pairs[1]),
-                              self.engine.get_ticker_orderBook_innermost(pairs[2])
-                              ]
-                        responses = self.send_request(rs)
-                        [maxAmount_Pair_1,USDT_1] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                                  responses[0].parsed['ask']['amount'] 
-                                                                                                 ,responses[0].parsed['ask']['price'] 
-                                                                                                 , lastPrices[0]
-                                                                                                 , responses[0].parsed['ask']['amount'] , 0 )
-                        [maxAmount_Pair_2,USDT_2] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                                      responses[1].parsed['ask']['amount']  
-                                                                                                     ,responses[1].parsed['ask']['price'] 
-                                                                                                     ,lastPrices[1]
-                                                                                                     , responses[0].parsed['ask']['amount'] ,0 )
-                        [maxAmount_Pair_3,USDT_3] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                                  responses[2].parsed['bid']['amount']  
-                                                                                                 ,responses[2].parsed['bid']['price'] 
-                                                                                                 , lastPrices[2]
-                                                                                                 , responses[2].parsed['bid']['amount'] ,1 )
-
-                        maxUSDT = min([USDT_1 , USDT_2 , USDT_3])
-                        maxAmounts = []
-                        for index in range(0,3): 
-                                  maxAmounts.append(maxUSDT /  lastPrices[index] ) 
-
-                        fee = 0
-                        for index, amount in enumerate(maxAmounts[0:3]):
-                            fee += amount * float(lastPrices[index])
-                        fee *= self.engine.feeRatio
-                        bidRoute_profit = (bidRoute_result - 1) * lastPrices[0] * maxAmounts[0]
-                        if maxUSDT > 20:
-                            print(pairs)
-                            print('BidRoute Percentage Profit: %.2f' % percentage_profit_bidRoute + '%')
-                            profit_fee = bidRoute_profit - fee
-                            net_pecentage_profit = (profit_fee / maxUSDT) * 100
-                            new_arbi_opp = Arbitrage_opportunity(pairs[0]
-                                                                 , pairs[1]
-                                                                 , pairs[2]
-                                                                 , "{:.2f}".format(percentage_profit_bidRoute) + '%'
-                                                                 , "{:.2f}".format(net_pecentage_profit) + '%'
-                                                                 , bidRoute_profit - fee
-                                                                 , maxUSDT
-                                                                 , 'BidRoute'
-                                                                 , bidRoute_result
-                                                                 , 'Blocked'
-                                                                   , self.round_number
-                                                                 , self.session
-                                                                 )
-                            self.dataframe_object_opportunities.parse_data_to_dataframe(new_arbi_opp,'triangular_arbitrage_data.csv')
-                            print('Profit:' + str(bidRoute_profit - fee))
-
-    def parse_to_dataframe_askRoute(self , pairs , lastPrices  , askRoute_result , percentage_profit_askRoute): 
-        rs = [self.engine.get_ticker_orderBook_innermost(pairs[0]),
-              self.engine.get_ticker_orderBook_innermost(pairs[1]),
-              self.engine.get_ticker_orderBook_innermost(pairs[2])]
-        responses = self.send_request(rs)
-                            
-                            
-        [maxAmount_Pair_1,USDT_1] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                      responses[0].parsed['bid']['amount']  
-                                                                                     ,responses[0].parsed['bid']['price'] 
-                                                                                     , responses[0].parsed['bid']['price'] 
-                                                                                     ,responses[0].parsed['bid']['amount'] 
-                                                                                     , 1 )
-        [maxAmount_Pair_2,USDT_2] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                      responses[1].parsed['bid']['amount']  
-                                                                                     ,responses[1].parsed['bid']['price'] 
-                                                                                     ,lastPrices[1]
-                                                                                     ,responses[1].parsed['bid']['amount'] ,1 )
-        [maxAmount_Pair_3,USDT_3] =self.get_maxAmount_in_a_specific_currency_and_USDT( 
-                                                                                      responses[2].parsed['ask']['amount']  
-                                                                                     ,responses[2].parsed['ask']['price'] 
-                                                                                     ,responses[2].parsed['ask']['price'] 
-                                                                                     ,responses[2].parsed['ask']['amount']  ,0 )
-        
-        maxUSDT = min([USDT_1 , USDT_2 , USDT_3])
-        maxAmounts = []
                     
-        for index in range(0,3): 
-            maxAmounts.append(maxUSDT /  lastPrices[index] ) 
-                            
-            fee = 0 
-            for index, amount in enumerate(maxAmounts[0:3]):
-                fee += amount * lastPrices[index]
-            fee *= self.engine.feeRatio
-            askRoute_profit = (askRoute_result - 1) * lastPrices[1] * maxAmounts[0]
 
-            if maxUSDT < 20:
-                print(pairs)
-                print('AskRoute Percentage Profit: %.2f' % percentage_profit_askRoute + '%')
-                profit_fee = askRoute_profit - fee
-                if profit_fee < 0 : break
-                net_pecentage_profit = (profit_fee / maxUSDT) * 100
-                new_arbi_opp = Arbitrage_opportunity( pairs[0]
-                                                    , pairs[1]
-                                                    , pairs[2]
-                                                    , "{:.2f}".format(percentage_profit_askRoute) + '%'
-                                                    , "{:.2f}".format(net_pecentage_profit) + '%'
-                                                    , askRoute_profit - fee
-                                                    , maxUSDT
-                                                    , 'AskRoute'
-                                                    , askRoute_result
-                                                    , 'Blocked'
-                                                    , self.round_number
-                                                    , self.session
-                                                    )
-                self.dataframe_object_opportunities.parse_data_to_dataframe(new_arbi_opp,'triangular_arbitrage_data.csv')
-                print('Profit:' + str(askRoute_profit - fee))
+
+                self.round_number =self.round_number + 1         
+            except Exception as e : 
+               print(e)
+               time.sleep(5)
+               pass
+  
+    def parse_to_dataframe_bidRoute(self , pairs ,  askRates,bidRates,askAmounts, bidAmounts):
+                        
+        max_Amount_1  =     askAmounts[0] / askRates[1]
+        max_Amount_2  =askAmounts[1]
+        max_Amount_3  = bidAmounts[2]
+ 
+        final_max_Amount = min( max_Amount_1 , max_Amount_2  , max_Amount_3 )
+                        
+
+        maxAmounts =  [0, 0  ,0 ]
+        maxAmounts[0] =   final_max_Amount * askRates[1] *0.99   
+        maxAmounts[1] = final_max_Amount  * (1 - self.engine.feeRatio)  *0.99   
+        maxAmounts[2] =  final_max_Amount  * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio)*0.99 
+
+        starting_Amount =  maxAmounts[0]*askRates[0]*0.99  
+        
+                        
+        final_result =  (maxAmounts[2] * bidRates[2]*0.99)  * (1 - self.engine.feeRatio)   
+        profit = final_result - starting_Amount
+        percentage_profit =  ( profit  /  starting_Amount) *100
+        
+        if  profit > 0  :
+            percentage_profit = "{:.3f}".format(percentage_profit)  + '%'
+            profit =  "{:.3f}".format(profit) 
+            starting_Amount =  "{:.3f}".format(starting_Amount)  + ' ' + pairs[0].split('-')[1]
+            
+            print(pairs)
+            print('BidRoute Percentage Profit: '+  percentage_profit )
+            print('BidRoute Profit:'+   profit  )
+            print ('Max Amount:'+  starting_Amount  )
+            new_arbi_opp = Arbitrage_opportunity(  
+                                                   pairs[0]
+                                                 , pairs[1]
+                                                 , pairs[2]
+                                                 , percentage_profit
+                                                 , profit
+                                                 , starting_Amount
+                                                 , pairs[0].split('-')[1]
+                                                 ,'BidRoute'
+                                                 , self.round_number
+                                                 , self.session
+                                                 )
+            self.dataframe_object_opportunities.parse_data_to_dataframe(new_arbi_opp,'triangular_arbitrage_data.csv')
+            
+    def parse_to_dataframe_askRoute(self , pairs ,askRates, bidRates, askAmounts , bidAmounts): 
+                        
+        max_Amount_1  =     bidAmounts[0] / bidRates[1]
+        max_Amount_2  = bidAmounts[1]
+        max_Amount_3  = askAmounts[2]
+ 
+        final_max_Amount = min( max_Amount_1 , max_Amount_2  , max_Amount_3 )
+                        
+
+        maxAmounts =  [0, 0  ,0 ]
+        maxAmounts[0] =   final_max_Amount * bidRates[1] *0.99   
+        maxAmounts[1] = final_max_Amount  * (1 - self.engine.feeRatio)  *0.99   
+        maxAmounts[2] =  final_max_Amount  * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio)*0.99 
+
+        starting_Amount =  maxAmounts[0]*bidRates[0]*0.99  
+        
+                        
+        final_result =  (maxAmounts[2] * askRates[2]*0.99)  * (1 - self.engine.feeRatio)   
+        profit = final_result - starting_Amount
+        percentage_profit =  ( profit  /  starting_Amount) *100
+        
+        if  profit > 0  :
+            percentage_profit = "{:.3f}".format(percentage_profit)  + '%'
+            profit =  "{:.3f}".format(profit) 
+            starting_Amount =  "{:.3f}".format(starting_Amount)  + ' ' + pairs[0].split('-')[1]
+            
+            print(pairs)
+            print('BidRoute Percentage Profit: '+  percentage_profit )
+            print('BidRoute Profit:'+   profit  )
+            print ('Max Amount:'+  starting_Amount  )
+            new_arbi_opp = Arbitrage_opportunity(  
+                                                   pairs[0]
+                                                 , pairs[1]
+                                                 , pairs[2]
+                                                 , percentage_profit
+                                                 , profit
+                                                 , starting_Amount
+                                                 , pairs[0].split('-')[1]
+                                                 ,'AskRoute'
+                                                 , self.round_number
+                                                 , self.session
+                                                 )
+            self.dataframe_object_opportunities.parse_data_to_dataframe(new_arbi_opp,'triangular_arbitrage_data.csv')
         
     
     #This is the function for placing an order
