@@ -370,8 +370,8 @@ class CryptoEngineTriArbitrage(object):
     def parse_to_dataframe_askRoute(self , pairs ,askRates, bidRates, askAmounts , bidAmounts): 
                         
         max_Amount_1  =     bidAmounts[0] / bidRates[1]
-        max_Amount_2  = bidAmounts[1]
-        max_Amount_3  = askAmounts[2]
+        max_Amount_2  = askAmounts[2]
+        max_Amount_3  = bidAmounts[1]
  
         final_max_Amount = min( max_Amount_1 , max_Amount_2  , max_Amount_3 )
                         
@@ -381,10 +381,10 @@ class CryptoEngineTriArbitrage(object):
         maxAmounts[1] = final_max_Amount  * (1 - self.engine.feeRatio)  *0.99   
         maxAmounts[2] =  final_max_Amount  * (1 - self.engine.feeRatio)  * (1 - self.engine.feeRatio)*0.99 
 
-        starting_Amount =  maxAmounts[0]*bidRates[0]*0.99  
+        starting_Amount =  maxAmounts[0]*0.99  
         
                         
-        final_result =  (maxAmounts[2] * askRates[2]*0.99)  * (1 - self.engine.feeRatio)   
+        final_result =  (maxAmounts[2] * bidRates[1]*0.99)  * (1 - self.engine.feeRatio)   
         profit = final_result - starting_Amount
         percentage_profit =  ( profit  /  starting_Amount) *100
         
@@ -394,8 +394,8 @@ class CryptoEngineTriArbitrage(object):
             starting_Amount =  "{:.3f}".format(starting_Amount)  + ' ' + pairs[0].split('-')[1]
             
             print(pairs)
-            print('BidRoute Percentage Profit: '+  percentage_profit )
-            print('BidRoute Profit:'+   profit  )
+            print('AskRoute Percentage Profit: '+  percentage_profit )
+            print('AskRoute Profit:'+   profit  )
             print ('Max Amount:'+  starting_Amount  )
             new_arbi_opp = Arbitrage_opportunity(  
                                                    pairs[0]
